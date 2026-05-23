@@ -29,3 +29,6 @@ data/*.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+#Internal docs(not synced to public repo)
+docs/
