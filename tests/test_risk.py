@@ -4,6 +4,7 @@ import math
 import pandas as pd
 import pytest
 from src.analytics.risk import annualized_volatility, max_drawdown
+from src.analytics.risk import beta
 
 def _series(values:list[float], start_date: str = "2024-01-02") -> pd.Series:
     idx = pd.bdate_range(start=start_date, periods=len(values))
@@ -32,3 +33,14 @@ def test_max_drawdown_v_shape():
 def test_max_drawdown_monotonic_increase_is_zero():
     s = _series([100.0, 110.0, 120.0, 130.0])
     assert math.isclose(max_drawdown(s), 0.0)
+
+def test_beta_perfectly_correlated_one_to_one():
+    benchmark = _series([100.0, 102.0, 104.0, 102.0, 100.0])
+    portfolio = _series([200.0, 204.0, 208.0, 204.0, 200.0]) #same %, 2x price
+    #Identical returns -> beta == 1.0
+    assert math.isclose(beta(portfolio, benchmark), 1.0, abs_tol=1e-9)
+
+def test_beta_2x_amplified():
+    benchmark = _series([100.0, 102.0, 100.0, 102.0])  # +2%, -2%, +2%
+    portfolio = _series([100.0, 104.0, 100.0, 104.0])  # +4%, -4%, +4%
+    assert math.isclose(beta(portfolio, benchmark), 2.0, abs_tol=0.05)
