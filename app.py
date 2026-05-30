@@ -1,28 +1,39 @@
-"""Portfolio Analyzer - Hello World smoke test.
+"""Portfolio Analyzer - Streamlit entry point."""
 
-This file is just to verify the dev environment works.
-We'll replace it with the real app in the next phase.
-"""
-
+from datetime import date, timedelta
 import streamlit as st
+import plotly.graph_objects as go
 
+from src.data import get_price_history
 
-def main():
+st.set_page_config(page_title="Portfolio Analyzer", layout="wide")
+
+def main() -> None:
     st.title("Portfolio Analyzer")
-    st.subheader("Hello World - environment check")
+    st.caption("MVP - single ticker only for now")
 
-    st.write("If you can see this in the browser, your setup works!")
+    ticker = st.text_input("Ticker", value="AAPL").strip().upper()
+    days_back = st.slider("Lookback (days)", min_value=30, max_value=730, value=365)
 
-    st.markdown("---")
+    if not ticker:
+        st.info("Enter a ticker to begin")
+        return
 
-    name = st.text_input("What's your name?", value="Narissa")
+    end = date.today()
+    start = end - timedelta(days=days_back)
 
-    if st.button("Greet me"):
-        st.success(f"Hello, {name}! Welcome to your Python journey.")
+    with st.spinner(f"Fetching {ticker}..."):
+        prices = get_price_history(ticker, start, end)
+    if prices.empty:
+        st.error(f"No data found for {ticker}")
+        return
 
-    st.markdown("---")
-    st.caption("Built with Streamlit + Python 3.14")
+    st.success(f"Loaded {len(prices)} days of {ticker} data")
 
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=prices.index, y=prices["Close"], name=ticker))
+    fig.update_layout(title = f"{ticker} Close Price", height=400)
+    st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
