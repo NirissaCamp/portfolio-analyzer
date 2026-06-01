@@ -28,3 +28,17 @@ def build_nav_vs_benchmark(
         hovermode="x unified",
     )
     return fig
+
+def build_holdings_pie(
+        holdings_with_value: dict[str, float],
+) -> go.Figure:
+    """Pie chart of current market value by ticker."""
+    fig = go.Figure(
+        data=[go.Pie(
+            labels=list(holdings_with_value.keys()),
+            values=list(holdings_with_value.values()),
+            hole=0.4,
+        )]
+    )
+    fig.update_layout(title="Holdings Allocation (by current value)", height=400)
+    return fig

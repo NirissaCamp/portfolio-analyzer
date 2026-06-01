@@ -64,5 +64,18 @@ def main() -> None:
     fig = build_nav_vs_benchmark(nav, benchmark["Close"], portfolio.name)
     st.plotly_chart(fig, use_container_width=True)
 
+    #Holdings pie chart based on most recent close * shares
+    holdings_value: dict[str, float] = {}
+    for h in portfolio.holdings:
+        df = get_price_history(h.ticker, start, end)
+        if df.empty:
+            continue
+        latest_close = float(df["Close"].iloc[-1])
+        holdings_value[h.ticker] = latest_close * h.shares
+
+    if holdings_value:
+        from src.ui.charts import build_holdings_pie
+        st.plotly_chart(build_holdings_pie(holdings_value), use_container_width=True)
+
 if __name__ == "__main__":
     main()
