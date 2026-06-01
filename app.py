@@ -3,13 +3,13 @@
 from datetime import date, timedelta
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 
 from src.config import BENCHMARK_TICKER
 from src.data import get_price_history
 from src.data.models import Portfolio
 from src.ui.input_form import render_portfolio_input
 from src.ui.metrics_panel import render_metrics_cards
+from src.ui.charts import build_nav_vs_benchmark
 
 st.set_page_config(page_title="Portfolio Analyzer", layout="wide")
 
@@ -61,9 +61,7 @@ def main() -> None:
 
     render_metrics_cards(nav, benchmark["Close"])
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=nav.index, y=nav, name=portfolio.name))
-    fig.update_layout(title = "Portfolio NAV (share-weighted, rebased to 100)", height=400)
+    fig = build_nav_vs_benchmark(nav, benchmark["Close"], portfolio.name)
     st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
