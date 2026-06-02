@@ -49,6 +49,25 @@ def main() -> None:
 
     st.subheader(f"Results for: {portfolio.name}")
 
+    #Overview: market value, cost basis, P&L
+    total_cost = sum(h.shares * h.cost_basis for h in portfolio.holdings)
+    total_value = 0.0
+    for h in portfolio.holdings:
+        df = get_price_history(h.ticker, start, end)
+        if not df.empty:
+            total_value += float(df["Close"].iloc[-1]) * h.shares
+
+    pnl_dollars = total_value - total_cost
+    pnl_pct = (pnl_dollars / total_cost) if total_cost else 0.0
+
+    ov1, ov2, ov3, ov4 = st.columns(4)
+    ov1.metric("Total Cost", f"${total_cost:,.2f}")
+    ov2.metric("Market Value", f"${total_value:,.2f}")
+    ov3.metric("P&L ($)", f"${pnl_dollars:,.2f}")
+    ov4.metric("P&L (%)", f"{pnl_pct:.2%}")
+
+    st.divider()
+
     nav = _weight_nav(portfolio, start, end)
     if nav is None:
         st.error(f"Could not load any holdings - aborting")
