@@ -6,7 +6,7 @@ from src.data.cache import init_cache, put_prices, get_prices, is_fresh
 @pytest.fixture
 def temp_db(tmp_path):
     """Provide a fresh SQLite path for each other."""
-    db_gtipath = tmp_path / "test_cache.db"
+    db_path = tmp_path / "test_cache.db"
     init_cache(db_path)
     return db_path
 
