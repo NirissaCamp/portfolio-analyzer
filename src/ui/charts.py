@@ -42,3 +42,21 @@ def build_holdings_pie(
     )
     fig.update_layout(title="Holdings Allocation (by current value)", height=400)
     return fig
+
+def build_correlation_heatmap(corr: pd.DataFrame) -> go.Figure:
+    """Heatmap of pairwise correlations among holdings."""
+    fig = go.Figure(
+        data= go.Heatmap(
+            z=corr.values,
+            x=corr.columns,
+            y=corr.index,
+            zmin=-1,
+            zmax=1,
+            colorscale="RdBu",
+            reversescale=True,
+            text=corr.round(2).values,
+            texttemplate="%{text}",
+        )
+    )
+    fig.update_layout(title="Holdings correlation (daily returns)", height=400)
+    return fig

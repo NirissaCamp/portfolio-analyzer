@@ -64,6 +64,20 @@ def main() -> None:
     fig = build_nav_vs_benchmark(nav, benchmark["Close"], portfolio.name)
     st.plotly_chart(fig, use_container_width=True)
 
+    #Correlation heatmap (skip if only 1 holding)
+    if len(portfolio.holdings) >= 2:
+        from src.analytics.correlation import correlation_matrix
+        from src.ui.charts import build_correlation_heatmap
+
+        price_series_map = {}
+        for h in portfolio.holdings:
+            df = get_price_history(h.ticker, start, end)
+            if not df.empty:
+                price_series_map[h.ticker] = df["Close"]
+        if len(price_series_map) >= 2:
+            corr = correlation_matrix(price_series_map)
+            st.plotly_chart(build_correlation_heatmap(corr), use_container_width=True)
+
     #Holdings pie chart based on most recent close * shares
     holdings_value: dict[str, float] = {}
     for h in portfolio.holdings:
