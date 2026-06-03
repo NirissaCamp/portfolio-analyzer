@@ -13,6 +13,7 @@ from src.ui.charts import build_nav_vs_benchmark
 
 st.set_page_config(page_title="Portfolio Analyzer", layout="wide")
 
+
 def _weight_nav(portfolio: Portfolio, start: date, end: date) -> pd.Series | None:
     """Compute  NAV time series weighted by current shares per holdings.
     NAV(t) = sum over holdings of (shares * close_price(t)).
@@ -88,8 +89,12 @@ def main() -> None:
 
     render_metrics_cards(nav, benchmark["Close"])
 
+    st.divider()
+
     fig = build_nav_vs_benchmark(nav, benchmark["Close"], portfolio.name)
     st.plotly_chart(fig, use_container_width=True)
+
+    st.divider()
 
     #Correlation heatmap (skip if only 1 holding)
     if len(portfolio.holdings) >= 2:
@@ -104,6 +109,7 @@ def main() -> None:
         if len(price_series_map) >= 2:
             corr = correlation_matrix(price_series_map)
             st.plotly_chart(build_correlation_heatmap(corr), use_container_width=True)
+            st.divider()
 
     #Holdings pie chart based on most recent close * shares
     holdings_value: dict[str, float] = {}
