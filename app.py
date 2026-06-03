@@ -20,7 +20,11 @@ def _weight_nav(portfolio: Portfolio, start: date, end: date) -> pd.Series | Non
     """
     holdings_close = {}
     for h in portfolio.holdings:
-        df = get_price_history(h.ticker, start, end)
+        try:
+            df = get_price_history(h.ticker, start, end)
+        except Exception as e:
+            st.error(f"Failed to fetch {h.ticker}: {e}")
+            continue
         if df.empty:
             st.warning(f"No data for {h.ticker}")
             continue
@@ -46,6 +50,10 @@ def main() -> None:
 
     end = date.today()
     start = end - timedelta(days=days_back)
+
+    if days_back < 30:
+        st.warning("Need at least 30 days for meaningful metrics")
+        return
 
     st.subheader(f"Results for: {portfolio.name}")
 
