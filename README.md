@@ -2,7 +2,7 @@
 
   A Python-based portfolio analysis tool for U.S. stocks.
 
-  **Live demo:** _(to be added after deployment to Streamlit Cloud)_
+  **Live demo:** [https://nirissa-portfolio.streamlit.app](https://nirissa-portfolio.streamlit.app)
 
   ![Dashboard](assets/screenshots/dashboard.png)
 
