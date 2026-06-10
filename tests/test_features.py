@@ -54,7 +54,7 @@ def test_sma_ratio_above_one_when_short_above_long():
     result = sma_ratio(s, short=5, long=20)
     assert result.iloc[25] > 1.0
 
-def test_sma_ration_at_one_when_flat():
+def test_sma_ratio_at_one_when_flat():
     s = _series([100.0] * 30)
     result = sma_ratio(s, short=5, long=20)
 
@@ -67,3 +67,25 @@ def test_volume_ratio_spike():
     v = _series([1000.0] *20 + [5000.0, 1000.0, 1000, 0]) #spike on day 20
     result = volume_ratio(v, window=20)
     assert result.iloc[20] > 4.0  #5000 vs ~1000 avg
+
+from src.ml.features import rsi
+
+def test_rsi_all_gains_approaches_100():
+    #Monotonically rising prices: only gains, no loss -> RSI near 100
+    s = _series([100.0 + i for i in range(20)])
+    result = rsi(s, window=14)
+    assert result.iloc[15] > 99 # Very close to 100
+
+def test_rsi_all_loss_approached_zero():
+    s = _series([100.0 - i for i in range(20)])
+    result = rsi(s, window=14)
+    assert result.iloc[15] < 1  # Very close to 0
+
+def test_rsi_flat_returns_neutral_or_nan():
+    #When all returns are 0, avg gain and avg loss are both 0 -> undefined
+    #Our implementation should return NaN (not crash)
+    s = _series([100.0] * 20)
+    result = rsi(s, window=14)
+    #Either NaN or 50 is acceptable; we accept NaN
+    val = result.iloc[15]
+    assert math.isnan(val) or math.isclose(val, 50.0)

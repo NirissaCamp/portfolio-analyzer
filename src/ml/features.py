@@ -23,3 +23,16 @@ def sma_ratio(prices: pd.Series, short: int=5, long: int=20) -> pd.Series:
 def volume_ratio(volume: pd.Series, window: int=20) -> pd.Series:
     """Today's volume divided by rolling average volume."""
     return volume / volume.rolling(window).mean()
+
+def rsi(prices: pd.Series, window: int=14) -> pd.Series:
+    """Relative Strength Index (RSI) - 14 days classic momentum oscillator.
+    RSI ranges 0-100. > 70 typically "overbought"; < 30 typically "oversold".
+    Uses simple moving average of gains/losses (not Wilder's smoothing).
+    """
+    delta = prices.diff()
+    gain = delta.clip(lower=0)
+    loss = - delta.clip(upper=0)
+    avg_gain = gain.rolling(window).mean()
+    avg_loss = loss.rolling(window).mean()
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
