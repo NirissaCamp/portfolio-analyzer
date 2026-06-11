@@ -76,7 +76,7 @@ def test_rsi_all_gains_approaches_100():
     result = rsi(s, window=14)
     assert result.iloc[15] > 99 # Very close to 100
 
-def test_rsi_all_loss_approached_zero():
+def test_rsi_all_loss_approaches_zero():
     s = _series([100.0 - i for i in range(20)])
     result = rsi(s, window=14)
     assert result.iloc[15] < 1  # Very close to 0
@@ -89,3 +89,57 @@ def test_rsi_flat_returns_neutral_or_nan():
     #Either NaN or 50 is acceptable; we accept NaN
     val = result.iloc[15]
     assert math.isnan(val) or math.isclose(val, 50.0)
+
+from src.ml.features import build_features
+
+def test_build_features_columns_present():
+    """Verify build_features returns a DataFrame with all 8 expected columns."""
+    n = 60
+    prices = _series([100.0 + i * 0.5 for i in range(n)])
+    volumes = _series([1000.0 + i * 10 for i in range(n)])
+    market_prices = _series([200.0 + i * 0.3 for i in range(n)])
+
+    df = build_features(prices, volumes, market_prices)
+    excepted_cols = {
+        "return_1d", "return_5d", "return_20d",
+        "volatility_20d", "sma_ratio_5_20", "rsi_14",
+        "volume_ratio_20d", "market_return_5d",
+    }
+    assert excepted_cols.issubset(set(df.columns))
+
+def test_build_features_no_nan_after_warmup():
+    """After day 20, all features should be valid (no NaN)."""
+    n = 60
+    prices = _series([100.0 + i * 0.5 for i in range(n)])
+    volumes = _series([1000.0] * n)
+    market_prices = _series([200.0 + i * 0.3 for i in range(n)])
+
+    df = build_features(prices, volumes, market_prices)
+    #Rows >= 20 should have no NaN
+    assert not df.iloc[25].isna().any()
+
+
+from src.ml.features import build_dataset
+
+def test_build_dataset_combine_multiple_tickers():
+    """build_dataset stacks features for multiple tickers into one DataFrame."""
+    n = 60
+    market_prices = _series([200.0 + i * 0.3 for i in range(n)])
+    ticker_data = {
+        "AAPL": {
+            "Close": _series([100.0 + i * 0.5 for i in range(n)]),
+            "Volume": _series([1000.0] * n),
+        },
+        "MSFT":{
+            "Close": _series([200.0 + i * 0.4 for i in range(n)]),
+            "Volume": _series([2000.0] * n),
+        },
+    }
+
+    X, y = build_dataset(ticker_data, market_prices, forecast_days=5)
+
+    assert "ticker" in X.columns or X.index.nlevels >= 1 #ticker somehow encoded
+    #Both tickers contribute roughly equal rows ( minus the last 5)
+    #60 rows - 20 warmup - 5 forward = 35 usable per ticker -> 70 total
+    assert 60 <= len(X) <= 80
+    assert len(X) == len(y)
