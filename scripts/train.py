@@ -7,6 +7,10 @@ trains Ridge + XGBoost, evaluates on a chronological hold-out split,
 saves models as .pkl, appends results to training_log.txt.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import time
 from datetime import date, datetime
 from pathlib import Path
