@@ -56,8 +56,11 @@ def _compute_features_row(ticker: str, end: date, market_prices: pd.Series) -> p
     if full.empty:
         return None
     features = build_features(full["Close"], full["Volume"], market_prices)
-    last_row = features.iloc[[-1]]
-    return last_row
+    #Drop rows where any feature is NaN (warmup period + index misalignment at the tail)
+    features = features.dropna()
+    if features.empty:
+        return None
+    return features.iloc[[-1]]
 
 
 def render_forecast_tab(portfolio: Portfolio) -> None:
@@ -94,11 +97,11 @@ def render_forecast_tab(portfolio: Portfolio) -> None:
     rows = []
     for h in portfolio.holdings:
         features_row = _compute_features_row(h.ticker, end, market_prices)
-        if features_row is None or features_row.inna().any().any():
+        if features_row is None or features_row.isna().any().any():
             st.warning(f"Insufficient or invalid data for {h.ticker}, skipping.")
             continue
         linear_pred = predict_for_features(models["linear"], features_row)
-        xgb_pred = predict_for_features(model=["xgboost"], features_row)
+        xgb_pred = predict_for_features(models["xgboost"], features_row)
         df = get_price_history(h.ticker, end - timedelta(days=10), end)
         if df.empty:
             continue

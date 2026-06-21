@@ -22,8 +22,14 @@ def init_cache(db_path: Path) -> None:
         conn.executescript(_SCHEMA)
 
 def put_prices(db_path: Path, ticker:str, df: pd.DataFrame) -> None:
-    """Insert or replace price rows for a ticker."""
+    """Insert or replace price rows for a ticker.
+    Rows with NaN Close (occasional yfinance quirk for incomplete days)
+    are silently dropped to satify the NOT NULL schema constraint.
+    """
     init_cache(db_path)
+    df = df.dropna(subset=["Close"])
+    if df.empty:
+        return
     now = datetime.now().isoformat()
     rows = [
         (ticker, idx.date().isoformat(), float(row["Close"]), now)

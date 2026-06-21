@@ -10,6 +10,7 @@ from src.data.models import Portfolio
 from src.ui.input_form import render_portfolio_input
 from src.ui.metrics_panel import render_metrics_cards
 from src.ui.charts import build_nav_vs_benchmark
+from src.ui.forecast_panel import render_forecast_tab
 
 st.set_page_config(page_title="Portfolio Analyzer", layout="wide")
 
@@ -56,73 +57,77 @@ def main() -> None:
         st.warning("Need at least 30 days for meaningful metrics")
         return
 
-    st.subheader(f"Results for: {portfolio.name}")
+    # Two tabs: existing Phase 1 analysis + new Phase 2 forecast
+    tab1, tab2 = st.tabs(["📊 Analysis", "🔮 Forecast"])
+    with tab1:
+        st.subheader(f"Results for: {portfolio.name}")
 
-    #Overview: market value, cost basis, P&L
-    total_cost = sum(h.shares * h.cost_basis for h in portfolio.holdings)
-    total_value = 0.0
-    for h in portfolio.holdings:
-        df = get_price_history(h.ticker, start, end)
-        if not df.empty:
-            total_value += float(df["Close"].iloc[-1]) * h.shares
-
-    pnl_dollars = total_value - total_cost
-    pnl_pct = (pnl_dollars / total_cost) if total_cost else 0.0
-
-    ov1, ov2, ov3, ov4 = st.columns(4)
-    ov1.metric("Total Cost", f"${total_cost:,.2f}")
-    ov2.metric("Market Value", f"${total_value:,.2f}")
-    ov3.metric("P&L ($)", f"${pnl_dollars:,.2f}")
-    ov4.metric("P&L (%)", f"{pnl_pct:.2%}")
-
-    st.divider()
-
-    nav = _weight_nav(portfolio, start, end)
-    if nav is None:
-        st.error(f"Could not load any holdings - aborting")
-        return
-
-    benchmark = get_price_history(BENCHMARK_TICKER, start, end)
-    if benchmark.empty:
-        st.error(f"Could not load S&P 500 benchmark")
-        return
-
-    render_metrics_cards(nav, benchmark["Close"])
-
-    st.divider()
-
-    fig = build_nav_vs_benchmark(nav, benchmark["Close"], portfolio.name)
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.divider()
-
-    #Correlation heatmap (skip if only 1 holding)
-    if len(portfolio.holdings) >= 2:
-        from src.analytics.correlation import correlation_matrix
-        from src.ui.charts import build_correlation_heatmap
-
-        price_series_map = {}
+        #Overview: market value, cost basis, P&L
+        total_cost = sum(h.shares * h.cost_basis for h in portfolio.holdings)
+        total_value = 0.0
         for h in portfolio.holdings:
             df = get_price_history(h.ticker, start, end)
             if not df.empty:
-                price_series_map[h.ticker] = df["Close"]
-        if len(price_series_map) >= 2:
-            corr = correlation_matrix(price_series_map)
-            st.plotly_chart(build_correlation_heatmap(corr), use_container_width=True)
-            st.divider()
+                total_value += float(df["Close"].iloc[-1]) * h.shares
 
-    #Holdings pie chart based on most recent close * shares
-    holdings_value: dict[str, float] = {}
-    for h in portfolio.holdings:
-        df = get_price_history(h.ticker, start, end)
-        if df.empty:
-            continue
-        latest_close = float(df["Close"].iloc[-1])
-        holdings_value[h.ticker] = latest_close * h.shares
+        pnl_dollars = total_value - total_cost
+        pnl_pct = (pnl_dollars / total_cost) if total_cost else 0.0
 
-    if holdings_value:
-        from src.ui.charts import build_holdings_pie
-        st.plotly_chart(build_holdings_pie(holdings_value), use_container_width=True)
+        ov1, ov2, ov3, ov4 = st.columns(4)
+        ov1.metric("Total Cost", f"${total_cost:,.2f}")
+        ov2.metric("Market Value", f"${total_value:,.2f}")
+        ov3.metric("P&L ($)", f"${pnl_dollars:,.2f}")
+        ov4.metric("P&L (%)", f"{pnl_pct:.2%}")
+
+        st.divider()
+
+        nav = _weight_nav(portfolio, start, end)
+        if nav is None:
+            st.error(f"Could not load any holdings - aborting")
+            return
+
+        benchmark = get_price_history(BENCHMARK_TICKER, start, end)
+        if benchmark.empty:
+            st.error(f"Could not load S&P 500 benchmark")
+            return
+
+        render_metrics_cards(nav, benchmark["Close"])
+        st.divider()
+
+        fig = build_nav_vs_benchmark(nav, benchmark["Close"], portfolio.name)
+        st.plotly_chart(fig, use_container_width=True)
+        st.divider()
+
+        #Correlation heatmap (skip if only 1 holding)
+        if len(portfolio.holdings) >= 2:
+            from src.analytics.correlation import correlation_matrix
+            from src.ui.charts import build_correlation_heatmap
+
+            price_series_map = {}
+            for h in portfolio.holdings:
+                df = get_price_history(h.ticker, start, end)
+                if not df.empty:
+                    price_series_map[h.ticker] = df["Close"]
+            if len(price_series_map) >= 2:
+                corr = correlation_matrix(price_series_map)
+                st.plotly_chart(build_correlation_heatmap(corr), use_container_width=True)
+                st.divider()
+
+        #Holdings pie chart based on most recent close * shares
+        holdings_value: dict[str, float] = {}
+        for h in portfolio.holdings:
+            df = get_price_history(h.ticker, start, end)
+            if df.empty:
+                continue
+            latest_close = float(df["Close"].iloc[-1])
+            holdings_value[h.ticker] = latest_close * h.shares
+
+        if holdings_value:
+            from src.ui.charts import build_holdings_pie
+            st.plotly_chart(build_holdings_pie(holdings_value), use_container_width=True)
+
+    with tab2:
+        render_forecast_tab(portfolio)
 
 if __name__ == "__main__":
     main()
