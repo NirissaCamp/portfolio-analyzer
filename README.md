@@ -1,100 +1,117 @@
 # Portfolio Analyzer
 
-  A Python-based portfolio analysis tool for U.S. stocks.
+A Python-based portfolio analysis tool for U.S. stocks.
 
-  **Live demo:** [https://nirissa-portfolio.streamlit.app](https://nirissa-portfolio.streamlit.app)
+**Live demo:** [https://nirissa-portfolio.streamlit.app](https://nirissa-portfolio.streamlit.app)
 
-  ![Dashboard](assets/screenshots/dashboard.png)
+![Dashboard](assets/screenshots/dashboard.png)
 
-  ## Features
+## Features
 
-  - **Multi-ticker portfolio input**: manual entry or CSV upload
-  - **8 standard financial metrics**: cumulative & annualized return, annualized volatility, Sharpe ratio, max drawdown, Beta,
-  Alpha, correlation matrix
-  - **5 visualization sections**: P&L overview, metric cards, NAV vs S&P 500 chart, correlation heatmap, holdings allocation
-  pie
-  - **S&P 500 benchmark comparison** for relative performance
-  - **Local SQLite cache** to reduce external API calls during development
-  - **Graceful error handling**: invalid tickers, network failures, malformed CSV all surface as warnings, never crashes
+- **Multi-ticker portfolio input**: manual entry or CSV upload
+- **8 standard financial metrics**: cumulative & annualized return, annualized volatility, Sharpe ratio, max drawdown, Beta, Alpha, correlation matrix
+- **5 visualization sections**: P&L overview, metric cards, NAV vs S&P 500 chart, correlation heatmap, holdings allocation pie
+- **S&P 500 benchmark comparison** for relative performance
+- **Local SQLite cache** to reduce external API calls during development
+- **Graceful error handling**: invalid tickers, network failures, malformed CSV all surface as warnings, never crashes
+- **5-day return forecasts** (Phase 2): Ridge + XGBoost models predict per-holding and portfolio-level returns, served from pre-trained `.pkl` files for sub-second inference
 
-  ## Tech Stack
+## Tech Stack
 
-  Python 3.14 · Streamlit · Pandas · NumPy · yfinance · Plotly · SQLite · pytest
+Python 3.14 · Streamlit · Pandas · NumPy · yfinance · Plotly · SQLite · pytest · scikit-learn · XGBoost
 
-  ## Architecture
+## Architecture
 
-  Strict 3-layer separation:
+Strict 3-layer separation:
 
-  src/
-  ├── data/         # yfinance fetching + SQLite caching
-  ├── analytics/    # Pure-function metric calculations (100% unit-tested)
-  └── ui/           # Streamlit components and Plotly chart builders
+```
+src/
+├── data/         # yfinance fetching + SQLite caching
+├── analytics/    # Pure-function metric calculations (100% unit-tested)
+├── ml/           # Phase 2: feature engineering + prediction (Ridge + XGBoost)
+└── ui/           # Streamlit components and Plotly chart builders
+```
 
-  The `analytics/` layer accepts Pandas Series and returns numbers — no I/O, no network calls. This makes every metric
-  trivially unit-testable with synthetic data.
+The `analytics/` layer accepts Pandas Series and returns numbers — no I/O, no network calls. This makes every metric trivially unit-testable with synthetic data.
 
-  ## Run Locally
+## Run Locally
 
-  ```bash
-  # 1. Clone
-  git clone https://github.com/NirissaCamp/portfolio-analyzer.git
-  cd portfolio-analyzer
+```bash
+# 1. Clone
+git clone https://github.com/NirissaCamp/portfolio-analyzer.git
+cd portfolio-analyzer
 
-  # 2. Create and activate virtual environment
-  python -m venv venv
-  .\venv\Scripts\Activate.ps1   # Windows PowerShell
-  # source venv/bin/activate    # macOS / Linux
+# 2. Create and activate virtual environment
+python -m venv venv
+.\venv\Scripts\Activate.ps1   # Windows PowerShell
+# source venv/bin/activate    # macOS / Linux
 
-  # 3. Install dependencies
-  pip install -r requirements.txt
+# 3. Install dependencies
+pip install -r requirements.txt
 
-  # 4. Run the app
-  streamlit run app.py
+# 4. Run the app
+streamlit run app.py
+```
 
-  Then open http://localhost:8501 in your browser.
+Then open `http://localhost:8501` in your browser.
 
-  Test
+## Test
 
-  pytest tests/ -v
+```bash
+pytest tests/ -v
+```
 
-  Tests cover all analytics functions (returns, risk, ratios, correlation) plus the SQLite cache layer.
+Tests cover all analytics functions (returns, risk, ratios, correlation), the SQLite cache layer, ML feature engineering, evaluation metrics, and model prediction.
 
-  CSV Format
+## CSV Format
 
-  When using the "Upload CSV" mode, files must have these columns:
+When using the "Upload CSV" mode, files must have these columns:
 
-  ticker,shares,cost_basis
-  AAPL,10,150.00
-  MSFT,5,300.00
-  NVDA,3,400.00
+```csv
+ticker,shares,cost_basis
+AAPL,10,150.00
+MSFT,5,300.00
+NVDA,3,400.00
+```
 
-  Rows with missing tickers or zero shares are skipped (with a warning).
+Rows with missing tickers or zero shares are skipped (with a warning).
 
-  Screenshots
+## Screenshots
 
-  assets/screenshots/charts.png
+![Correlation heatmap and allocation pie](assets/screenshots/charts.png)
 
-  Project Structure
+![Forecast tab with model predictions](assets/screenshots/forecast.png)
 
-  portfolio-analyzer/
-  ├── app.py                  # Streamlit entry point
-  ├── requirements.txt
-  ├── .streamlit/
-  │   └── config.toml         # Theme and runtime settings
-  ├── src/
-  │   ├── config.py           # Constants (risk-free rate, benchmark ticker, etc.)
-  │   ├── data/               # Data fetching + caching
-  │   ├── analytics/          # Financial metric calculations
-  │   └── ui/                 # Streamlit UI components
-  ├── tests/                  # pytest unit tests
-  └── assets/screenshots/     # README images
+## Project Structure
 
-  Roadmap
+```
+portfolio-analyzer/
+├── app.py                  # Streamlit entry point
+├── requirements.txt
+├── .streamlit/
+│   └── config.toml         # Theme and runtime settings
+├── scripts/
+│   └── train.py            # Phase 2: offline ML training pipeline
+├── models/                 # Phase 2: trained model artifacts (.pkl + log)
+│   ├── linear.pkl
+│   ├── xgboost.pkl
+│   └── training_log.txt
+├── src/
+│   ├── config.py           # Constants
+│   ├── data/               # Data fetching + caching
+│   ├── analytics/          # Financial metric calculations
+│   ├── ml/                 # Phase 2: features + prediction
+│   └── ui/                 # Streamlit UI components
+├── tests/                  # pytest unit tests
+└── assets/screenshots/     # README images
+```
 
-  - [x] Phase 1: Portfolio dashboard MVP (this release)
-  - [ ] Phase 2: ML-based return prediction
-  - [ ] Phase 3: AI Q&A with RAG over financial news
+## Roadmap
 
-  License
+- [x] **Phase 1**: Portfolio dashboard MVP
+- [x] **Phase 2**: ML-based 5-day return prediction (Ridge + XGBoost)
+- [ ] **Phase 3**: AI Q&A with RAG over financial news
 
-  MIT
+## License
+
+MIT
